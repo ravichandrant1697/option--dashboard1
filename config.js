@@ -16,28 +16,12 @@ const TUNING_FILE = "tuning.json";           // self-tuned parameters, written d
 
 // Runtime config — instrumentKey and strikeDiff are set by the startup
 // prompts (NIFTY or Stock, and the gap between strikes for spreads).
-const CONFIG = {
-   "segment": "NSE_EQ",
-        "name": "STATE BANK OF INDIA",
-        "exchange": "NSE",
-        "isin": "INE062A01020",
-        "instrument_type": "EQ",
-        "instrument_key": "NSE_EQ|INE062A01020",
-        "lot_size": 1,
-        "freeze_quantity": 100000.0,
-        "exchange_token": "3045",
-        "tick_size": 10.0,
-        "trading_symbol": "SBIN",
-        "short_name": "SBI",
-        "qty_multiplier": 1.0,
-        "security_type": "NORMAL",
-        "cas_eligible": true,
-  // instrumentKey: "NSE_INDEX|Nifty 50",
-  // expiryDate: "2026-08-18", // nearest expiry — update weekly (auto-pick is a V6 item)
-  // strikeRange: 1000,         // analyze ATM ± this many points
-  // strikeDiff: 50,           // spread width: sell leg = ATM ± strikeDiff (asked at startup)
-  pollMs: 180000,           // poll every 3 min — Upstox refreshes OI on that cadence,
-                            // so faster polls just re-read stale OI against price noise
+const CONFIG = {  
+  instrumentKey: "NSE_EQ|INE062A01020",
+  expiryDate: "2026-08-25", // nearest expiry — update weekly (auto-pick is a V6 item)
+  strikeRange: 100,         // analyze ATM ± this many points
+  strikeDiff: 10,           // spread width: sell leg = ATM ± strikeDiff (asked at startup)
+  pollMs: 180000,           // poll every 3 min — Upstox refreshes OI on that cadence,                 // so faster polls just re-read stale OI against price noise
   portfolioRefreshMs: 15 * 60000, // snapshot long-term holdings every 15 min
   positionsRefreshMs: 5 * 60000,  // snapshot broker F&O positions every 5 min
   candleRefreshMs: 5 * 60000,     // refresh the 5-minute candle trend every 5 min
@@ -45,7 +29,7 @@ const CONFIG = {
 };
 
 const CAPITAL = 50000;      // trading capital in ₹
-const LOT_SIZE = 65;        // contract quantity per lot
+const LOT_SIZE = 750;        // contract quantity per lot
 const MAX_LOTS = 1;         // hard cap per trade — risk sizing never exceeds this
 
 // Risk model: risk up to 10% of capital per trade. (2% = ₹1,000 can never
