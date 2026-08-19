@@ -1,36 +1,6 @@
 {
   "date": "2026-08-19",
-  "open": [
-    {
-      "id": 1787124870342,
-      "openedAt": "2026-08-19 13:04:30",
-      "openedAtMs": 1787124870342,
-      "strategy": "Buy Call",
-      "legs": [
-        {
-          "strike": 1050,
-          "type": "CE",
-          "side": "BUY",
-          "instrument_key": "NSE_FO|146786"
-        }
-      ],
-      "lots": 1,
-      "netEntry": 11.55,
-      "stopDist": 5,
-      "targetDist": 10,
-      "lockDist": 5,
-      "exitMode": "scalp",
-      "estCharges": 63.41,
-      "confidence": 83,
-      "entryBias": "Bullish",
-      "trendAtEntry": "Up",
-      "horizon": "intraday",
-      "product": "I",
-      "expiry": "2026-08-25",
-      "_signalMiss": 1,
-      "_lastMissTs": "2026-08-19 13:40:30"
-    }
-  ],
+  "open": [],
   "closedToday": [
     {
       "PosId": 1787115186256,
@@ -75,10 +45,32 @@
       "Confidence": 83,
       "EntryBias": "Bearish",
       "TrendAtEntry": "Flat"
+    },
+    {
+      "PosId": 1787124870342,
+      "Timestamp": "2026-08-19 13:04:30",
+      "ExitTime": "2026-08-19 13:49:31",
+      "Horizon": "intraday",
+      "Expiry": "2026-08-25",
+      "Strategy": "Buy Call",
+      "Legs": "BUY 1050CE",
+      "Lots": 1,
+      "NetEntry": 11.55,
+      "NetExit": 9.85,
+      "Result": "LOSS",
+      "ExitReason": "SIGNAL_CHANGE",
+      "GrossPnL": -1275,
+      "Charges": 63.41,
+      "PnL": -1338.41,
+      "ExitMode": "scalp",
+      "RR": 2,
+      "Confidence": 83,
+      "EntryBias": "Bullish",
+      "TrendAtEntry": "Up"
     }
   ],
   "biasStreak": {
     "bias": "Bearish",
-    "count": 1
+    "count": 2
   }
 }
