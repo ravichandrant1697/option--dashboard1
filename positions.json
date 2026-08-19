@@ -27,13 +27,13 @@
       "horizon": "intraday",
       "product": "I",
       "expiry": "2026-08-25",
-      "_signalMiss": 0,
-      "_lastMissTs": "2026-08-19 10:26:06"
+      "_signalMiss": 1,
+      "_lastMissTs": "2026-08-19 10:50:07"
     }
   ],
   "closedToday": [],
   "biasStreak": {
-    "bias": "Range",
+    "bias": "Bullish",
     "count": 1
   }
 }
