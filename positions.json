@@ -27,7 +27,7 @@
       "horizon": "intraday",
       "product": "I",
       "expiry": "2026-08-25",
-      "_signalMiss": 1,
+      "_signalMiss": 0,
       "_lastMissTs": "2026-08-19 13:19:30"
     }
   ],
@@ -78,7 +78,7 @@
     }
   ],
   "biasStreak": {
-    "bias": "Bearish",
+    "bias": "Range",
     "count": 1
   }
 }
