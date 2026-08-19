@@ -32,7 +32,9 @@
       "trendAtEntry": "Flat",
       "horizon": "intraday",
       "product": "I",
-      "expiry": "2026-08-25"
+      "expiry": "2026-08-25",
+      "_signalMiss": 0,
+      "_lastMissTs": "2026-08-19 11:32:08"
     }
   ],
   "closedToday": [
@@ -61,6 +63,6 @@
   ],
   "biasStreak": {
     "bias": "Bearish",
-    "count": 5
+    "count": 2
   }
 }
