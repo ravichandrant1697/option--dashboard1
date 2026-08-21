@@ -55,15 +55,21 @@ const HORIZONS = {
                                    // (AvgIV 260, AvgTheta 3839) — no exit rule
                                    // made that day profitable in replay
     exitBufferDays: 0,
-    signalPersistence: 2,          // one noisy poll must not exit a position:
+    signalPersistence: 4,          // one noisy poll must not exit a position:
                                    // at persistence 1 every trade in the first
                                    // 3 live days died by SIGNAL_CHANGE in 1–9
                                    // min, with 0 STOP/TARGET exits ever.
-                                   // 3 → 2 on 2026-08-14: symmetric with
-                                   // RULES.entryBiasPersistence (2 in / 2 out)
-                                   // — at persistence 3 the wrong-way trade 4
-                                   // sat through a 2-poll reversal and rode
-                                   // its loss to the 15:21 square-off
+                                   // 2 → 4 on 2026-08-20 (stock retune): the
+                                   // SBIN bias flips on 59% of polls and its
+                                   // measured edge only shows at ~60-min
+                                   // holds — at persistence 2 the median hold
+                                   // was ~6 min and 33/34 exits were
+                                   // SIGNAL_CHANGE whipsaws. Replaying the
+                                   // Aug 18–20 sheets: exits at 3/4/5 netted
+                                   // −1096/−648/−440; 4 picked as the
+                                   // middle, not the best-fitting, value.
+                                   // The premium-relative stop still guards
+                                   // the downside while the position waits.
     plannedHoldDays: 0             // theta gate off — decay is intraday noise
   },
 
