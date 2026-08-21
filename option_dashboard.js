@@ -79,8 +79,18 @@ const { notify } = require("./notify");
 
 const { loadWorkbookCache } = require("./workbook");
 const { initState } = require("./state");
-const { autoResolveContracts } = require("./instruments");
 const { loadTuning, runTuning } = require("./tuning");
+
+// Contract auto-resolution is an ENHANCEMENT — a partial deploy that
+// misses instruments.js must degrade to configured values, not kill the
+// whole unattended session at startup (2026-08-21: a missing module cost
+// the entire morning run on Actions).
+let autoResolveContracts = async () => {};
+try {
+  ({ autoResolveContracts } = require("./instruments"));
+} catch {
+  console.warn("⚠️ instruments.js not found — contract auto-resolution disabled, using configured expiry/futures key");
+}
 const { connectStream } = require("./stream");
 const { run } = require("./engine");
 const { runBacktest } = require("./backtest");

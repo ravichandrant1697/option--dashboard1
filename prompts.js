@@ -5,8 +5,16 @@
 const readline = require("readline");
 const { CONFIG, LOT_SIZE, RISK_REWARD } = require("./config");
 const { activateHorizon } = require("./horizons");
-const { autoResolveContracts } = require("./instruments");
 const runtime = require("./runtime");
+
+// Enhancement module — a deploy that misses instruments.js must not crash
+// the wizard; the expiry prompt then just shows the configured default.
+let autoResolveContracts = async () => {};
+try {
+  ({ autoResolveContracts } = require("./instruments"));
+} catch {
+  console.warn("⚠️ instruments.js not found — expiry/futures auto-resolution disabled");
+}
 
 // Ask one question on the terminal and resolve with the trimmed answer.
 function ask(question) {
