@@ -8,15 +8,16 @@
  * matches the open position) | SQUARE_OFF (15:20 IST).
  */
 const { isMarketOpen, isSquareOffTime, pastIST, todayIST, istTimestamp } = require("./clock");
-const { fetchMarketData } = require("./upstox-api");
-const { analyze, maybeRefreshCandleTrend } = require("./signals");
+const { fetchMarketData, fetchQuotes } = require("./upstox-api");
+const { analyze, maybeRefreshCandleTrend, updateFuturesBuildup } = require("./signals");
 const { buildTradePlan, openPosition, closePosition } = require("./trade");
 const { getNetPremium, checkExit } = require("./pricing");
-const { getState, rollStateIfNewDay, saveState, canOpen, trackBiasStreak } = require("./state");
+const { getState, rollStateIfNewDay, saveState, canOpen, trackBiasStreak, trackDayOpen } = require("./state");
 const { appendRow, dashboardSheetName, toDashboardRow } = require("./workbook");
 const { maybeRefreshPortfolio, maybeRefreshPositions } = require("./portfolio");
 const { tuning, runTuning } = require("./tuning");
 const { getActiveHorizon } = require("./horizons");
+const { CONFIG } = require("./config");
 const runtime = require("./runtime");
 
 async function run() {
@@ -92,6 +93,21 @@ async function run() {
     await maybeRefreshCandleTrend();
 
     // ====================================================
+    // FUTURES BUILD-UP  (confirmation gate input — before
+    // analyze() so the poll's snapshot includes it)
+    // ====================================================
+
+    if (CONFIG.futuresKey) {
+      try {
+        const quotes = await fetchQuotes([CONFIG.futuresKey]);
+        updateFuturesBuildup(quotes.get(CONFIG.futuresKey));
+      } catch (e) {
+        // keep the previous read — a dropped quote must not fabricate one
+        console.error("Futures quote failed:", e.response?.status || e.message);
+      }
+    }
+
+    // ====================================================
     // ANALYSIS
     // ====================================================
 
@@ -110,9 +126,11 @@ async function run() {
     // persistence gates read state and must see TODAY's, not yesterday's
     // (the first poll of a morning session used to compare same-legs
     // against the PREVIOUS day's closedToday). Then count this poll
-    // toward the bias streak the persistence gate checks.
+    // toward the bias streak the persistence gate checks, and anchor the
+    // day-open spot the alignment gate compares entries against.
     rollStateIfNewDay();
     trackBiasStreak(result.bias);
+    trackDayOpen(result.spot);
 
     // ====================================================
     // TRADE PLAN
@@ -120,7 +138,7 @@ async function run() {
 
     console.log("Building trade plan...");
 
-    const plan = buildTradePlan(result, chain);
+    const plan = await buildTradePlan(result, chain);
 
     console.log(
       "Trade Plan:",
