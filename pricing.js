@@ -6,8 +6,8 @@
 const {
   STOP_PCT,
   RISK_REWARD,
-  SCALP_TARGET_POINTS,
-  SCALP_LOCK_POINTS,
+  SCALP_TARGET_PCT,
+  SCALP_LOCK_PCT,
   MAX_RISK,
   LOT_SIZE,
   MAX_LOTS,
@@ -53,27 +53,28 @@ function getNetPremium(chain, legs) {
 //             null safely; JSON turns Infinity into null anyway, but then
 //             a restart would compare move >= null — always true — and
 //             instantly close every ride position as a TARGET win.)
-//   "scalp"   bank the 5–10 pt band: target SCALP_TARGET_POINTS (10),
-//             stop = target / RISK_REWARD (5), and lockDist =
-//             SCALP_LOCK_POINTS (5) — once the move has SEEN +5 pts, a
-//             pullback to that level exits PROFIT_LOCK instead of letting
-//             the win round-trip back to the stop. Every scalp therefore
-//             banks 5–10 points once it reaches +5. Naked legs are ALWAYS
-//             scalp mode (forced in trade.js).
+//   "scalp"   bank a premium-relative band: target SCALP_TARGET_PCT (20%)
+//             of |net entry|, stop = target / RISK_REWARD keeps 1:2, and
+//             lockDist = SCALP_LOCK_PCT (10%) — once the move has SEEN
+//             +lock, a pullback to that level exits PROFIT_LOCK instead of
+//             letting the win round-trip back to the stop. Percentages,
+//             not points: absolute 10/5-pt bands were NIFTY premium scale
+//             and unreachable on a ~₹4–13 stock structure.
 //   "default" Range structures — stop = STOP_PCT (50%) of net premium,
 //             target = RISK_REWARD (2) × stop (credit: full decay).
-// Naked legs keep the tight scalp stop (5 pts) in every mode — a ₹36 ATM
-// option's 50% stop would be an 18-pt drawdown.
+// Naked legs keep the tight scalp stop in every mode — a 50% stop on a
+// naked ATM option is far too deep a drawdown.
 function exitLevels(netEntry, mode = "default", nakedLeg = false) {
+  const scalpTarget = Math.abs(netEntry) * SCALP_TARGET_PCT;
   const stopDist =
     nakedLeg || mode === "scalp"
-      ? SCALP_TARGET_POINTS / RISK_REWARD
+      ? scalpTarget / RISK_REWARD
       : Math.abs(netEntry) * STOP_PCT;
   const targetDist =
     mode === "ride" ? null :
-    mode === "scalp" ? SCALP_TARGET_POINTS :
+    mode === "scalp" ? scalpTarget :
     stopDist * RISK_REWARD;
-  const lockDist = mode === "scalp" ? SCALP_LOCK_POINTS : null;
+  const lockDist = mode === "scalp" ? Math.abs(netEntry) * SCALP_LOCK_PCT : null;
   return { stopDist, targetDist, lockDist };
 }
 
@@ -106,6 +107,12 @@ function exitLevels(netEntry, mode = "default", nakedLeg = false) {
 function checkExit(pos, netNow, result) {
   const horizon = getActiveHorizon();
   const move = netNow - pos.netEntry; // per-unit PnL
+  // WIN/LOSS for discretionary exits is decided on the NET rupee outcome
+  // (gross − estimated charges), not the gross move: the journal, the
+  // tuner AND the losing-streak breaker in state.canOpen read Result, and
+  // a "+₹62 gross / −₹50 net" trade calling itself WIN kept the breaker
+  // from ever tripping while the account bled.
+  const netWin = move * pos.lots * LOT_SIZE - (pos.estCharges ?? 0) >= 0;
 
   if (move <= -pos.stopDist) return { outcome: "LOSS", reason: "STOP" };
   // ride-mode positions have targetDist null — no fixed target, the
@@ -113,14 +120,14 @@ function checkExit(pos, netNow, result) {
   if (pos.targetDist != null && move >= pos.targetDist)
     return { outcome: "WIN", reason: "TARGET" };
 
-  // PROFIT_LOCK (scalp's 5–10 pt band floor): once the move has traded
+  // PROFIT_LOCK (scalp's premium-band floor): once the move has traded
   // ABOVE lockDist, a pullback to/below it banks the win — a scalp that
-  // reached +5 must never round-trip back to the -5 stop. _lockArmed
+  // reached +lock must never round-trip back to the stop. _lockArmed
   // lives on pos (persisted in positions.json), so a restart keeps it.
   if (pos.lockDist != null) {
     if (move > pos.lockDist) pos._lockArmed = true;
     else if (pos._lockArmed && move <= pos.lockDist)
-      return { outcome: "WIN", reason: "PROFIT_LOCK" };
+      return { outcome: netWin ? "WIN" : "LOSS", reason: "PROFIT_LOCK" };
   }
 
   if (horizon.maxHoldDays) {
@@ -131,11 +138,11 @@ function checkExit(pos, netNow, result) {
       ? (Date.now() - pos.openedAtMs) / 86400000
       : (nowIST().getTime() - new Date(pos.openedAt).getTime()) / 86400000;
     if (heldDays >= horizon.maxHoldDays)
-      return { outcome: move >= 0 ? "WIN" : "LOSS", reason: "TIME_STOP" };
+      return { outcome: netWin ? "WIN" : "LOSS", reason: "TIME_STOP" };
   }
 
   if (horizon.exitBufferDays && pos.expiry && daysUntil(pos.expiry) <= horizon.exitBufferDays)
-    return { outcome: move >= 0 ? "WIN" : "LOSS", reason: "EXPIRY_STOP" };
+    return { outcome: netWin ? "WIN" : "LOSS", reason: "EXPIRY_STOP" };
 
   // Only a true directional REVERSAL exits — Range drift and strategy
   // re-ranks are noise (see the header comment). Range-entered positions
@@ -153,13 +160,13 @@ function checkExit(pos, netNow, result) {
       pos._lastMissTs = result.timestamp;
     }
     if (pos._signalMiss >= horizon.signalPersistence)
-      return { outcome: move >= 0 ? "WIN" : "LOSS", reason: "SIGNAL_CHANGE" };
+      return { outcome: netWin ? "WIN" : "LOSS", reason: "SIGNAL_CHANGE" };
   } else if (pos._signalMiss) {
     pos._signalMiss = 0; // signal realigned — reset the streak
   }
 
   if (horizon.squareOff && isSquareOffTime())
-    return { outcome: move >= 0 ? "WIN" : "LOSS", reason: "SQUARE_OFF" };
+    return { outcome: netWin ? "WIN" : "LOSS", reason: "SQUARE_OFF" };
   return null;
 }
 
