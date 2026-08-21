@@ -14,7 +14,10 @@ const { todayIST, nowIST } = require("./clock");
 // biasStreak = consecutive polls the CURRENT bias has held — the entry
 // persistence gate (RULES.entryBiasPersistence) reads it. Persisted, so
 // the 12:17 afternoon session continues the morning session's count.
-let state = { date: todayIST(), open: [], closedToday: [], biasStreak: { bias: null, count: 0 } };
+// dayOpenSpot = the session's FIRST spot reading — the day-open alignment
+// gate (RULES.dayOpenAlignment) compares entries against it. Persisted so
+// the afternoon session keeps the morning's anchor, not its own first poll.
+let state = { date: todayIST(), open: [], closedToday: [], biasStreak: { bias: null, count: 0 }, dayOpenSpot: null };
 
 // Always fetch fresh — the object is REPLACED on day roll / recovery.
 function getState() {
@@ -41,7 +44,7 @@ function initState() {
 function rollStateIfNewDay() {
   const today = todayIST();
   if (state.date !== today) {
-    state = { date: today, open: state.open, closedToday: [], biasStreak: { bias: null, count: 0 } };
+    state = { date: today, open: state.open, closedToday: [], biasStreak: { bias: null, count: 0 }, dayOpenSpot: null };
   }
 }
 
@@ -55,6 +58,17 @@ function trackBiasStreak(bias) {
   return s.count;
 }
 
+// Anchor the day-open alignment gate: the FIRST spot reading of the day
+// sticks for the whole session (set-once). Called by the engine right
+// after rollStateIfNewDay so a date roll re-anchors on the new day's
+// first poll.
+function trackDayOpen(spot) {
+  if (state.dayOpenSpot == null && Number.isFinite(spot) && spot > 0) {
+    state.dayOpenSpot = spot;
+  }
+  return state.dayOpenSpot;
+}
+
 // Persist the in-memory state so a restart mid-session loses nothing.
 function saveState() {
   fs.writeFileSync(POSITIONS_FILE, JSON.stringify(state, null, 2));
@@ -65,6 +79,11 @@ function saveState() {
 function canOpen() {
   if (state.open.length >= RULES.maxOpenPositions)
     return "max open positions reached";
+
+  // Friction cap: every round trip costs ~₹105–125 in flat charges — past
+  // maxTradesPerDay the day is donating its edge to the broker.
+  if (RULES.maxTradesPerDay && state.closedToday.length >= RULES.maxTradesPerDay)
+    return `max ${RULES.maxTradesPerDay} trades/day reached`;
 
   const dayPnL = state.closedToday.reduce((s, t) => s + t.PnL, 0);
   if (dayPnL <= -RULES.maxDailyLoss)
@@ -95,4 +114,4 @@ function canOpen() {
   return null;
 }
 
-module.exports = { getState, initState, rollStateIfNewDay, saveState, canOpen, trackBiasStreak };
+module.exports = { getState, initState, rollStateIfNewDay, saveState, canOpen, trackBiasStreak, trackDayOpen };
