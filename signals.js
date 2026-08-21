@@ -89,12 +89,21 @@ function sma(closes, period) {
 }
 
 // Intraday trend: last six 5-minute closes (~30 min): > +0.1% Up,
-// < −0.1% Down, otherwise Flat.
+// < −0.1% Down, otherwise Flat. The SAME candle response also yields two
+// entry confirmations for free (no extra API call):
+//   VWAP         Σ(typical price × volume) / Σ(volume) over today — the
+//                day-anchor the alignment gate prefers over the first
+//                spot reading
+//   volumeSurge  max volume of the last two candles ÷ average of the rest
+//                (two, because the newest candle is usually still forming
+//                and would understate) — the volume-surge entry gate
 async function refreshIntradayTrend() {
   const candles = await fetchCandles(CONFIG.instrumentKey, "minutes", 5);
   if (candles.length < 6) {
     // fewer than six 5-min candles — e.g. the first ~30 min of the session
     runtime.setCandleTrend(null);
+    runtime.setVwap(null);
+    runtime.setVolumeSurge(null);
     return;
   }
   const recent = candles.slice(-6);
@@ -103,7 +112,25 @@ async function refreshIntradayTrend() {
   const pct = first ? ((last - first) / first) * 100 : 0;
   const trend = pct > 0.1 ? "Up" : pct < -0.1 ? "Down" : "Flat";
   runtime.setCandleTrend(trend);
-  console.log(`🕯️ CANDLE TREND (30m): ${trend} (${pct.toFixed(2)}%)`);
+
+  let pv = 0, vol = 0;
+  for (const c of candles) {
+    const typical = (c.high + c.low + c.close) / 3;
+    pv += typical * (c.volume || 0);
+    vol += c.volume || 0;
+  }
+  const vwap = vol > 0 ? Number((pv / vol).toFixed(2)) : null;
+  runtime.setVwap(vwap);
+
+  const rest = candles.slice(0, -2);
+  const restAvg = rest.reduce((s, c) => s + (c.volume || 0), 0) / rest.length;
+  const lastVol = Math.max(...candles.slice(-2).map(c => c.volume || 0));
+  const surge = restAvg > 0 ? Number((lastVol / restAvg).toFixed(2)) : null;
+  runtime.setVolumeSurge(surge);
+
+  console.log(
+    `🕯️ CANDLE TREND (30m): ${trend} (${pct.toFixed(2)}%) | VWAP ${vwap ?? "n/a"} | vol surge ${surge ?? "n/a"}×`
+  );
 }
 
 // Daily SMA-crossover trend for positional/swing (playbook MA rule).
@@ -162,6 +189,41 @@ async function maybeRefreshCandleTrend() {
   console.log("Refreshing candle trend...");
   await refreshCandleTrend();
   console.log("Candle trend refreshed.");
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * FUTURES BUILD-UP — the classic single-series confirmation. The near-
+ * month future has ONE price and ONE OI: poll-to-poll deltas classify as
+ *   ΔP↑ ΔOI↑  Long Buildup     → Bullish
+ *   ΔP↓ ΔOI↑  Short Buildup    → Bearish
+ *   ΔP↓ ΔOI↓  Long Unwinding   → Bearish
+ *   ΔP↑ ΔOI↓  Short Covering   → Bullish
+ * Far cleaner than the option chain's 20 noisy strike-level series — the
+ * entry gate blocks directional trades the futures flow CONTRADICTS.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+let prevFut = null; // { ltp, oi } of the previous poll's futures quote
+
+// Feed one futures quote row (from fetchQuotes) — updates the runtime
+// buildup the entry gate reads. First poll only seeds history; a missing
+// quote leaves the previous read in place (stale beats fabricated).
+function updateFuturesBuildup(quote) {
+  const ltp = quote?.last_price;
+  const oi = quote?.oi;
+  if (ltp == null || oi == null) return;
+
+  if (prevFut) {
+    const dP = ltp - prevFut.ltp;
+    const dOI = oi - prevFut.oi;
+    let label = "Neutral", direction = "Neutral";
+    if (dP > 0 && dOI > 0) { label = "Long Buildup"; direction = "Bullish"; }
+    else if (dP < 0 && dOI > 0) { label = "Short Buildup"; direction = "Bearish"; }
+    else if (dP < 0 && dOI < 0) { label = "Long Unwinding"; direction = "Bearish"; }
+    else if (dP > 0 && dOI < 0) { label = "Short Covering"; direction = "Bullish"; }
+    runtime.setFuturesBuildup({ label, direction });
+    console.log(`📈 FUTURES: ${label} (ΔP ${dP.toFixed(2)}, ΔOI ${dOI}) → ${direction}`);
+  }
+  prevFut = { ltp, oi };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -539,6 +601,12 @@ function analyze(chain, marketPcr) {
     timestamp: istTimestamp(), // IST wall clock — what the sheets display
     spot,
     atmStrike,
+    // Confirmation snapshots (journaled per poll so replays can validate
+    // the gates): today's VWAP, latest volume-surge ratio, and the futures
+    // build-up label. The engine refreshes futures BEFORE analyze().
+    vwap: runtime.getVwap(),
+    volumeSurge: runtime.getVolumeSurge(),
+    futuresBuildup: runtime.getFuturesBuildup()?.label ?? "",
     pcr,
     S1: topPuts[0]?.strike_price,
     S2: topPuts[1]?.strike_price,
@@ -574,5 +642,6 @@ module.exports = {
   getATMStrike,
   refreshCandleTrend,
   maybeRefreshCandleTrend,
+  updateFuturesBuildup,
   analyze
 };
