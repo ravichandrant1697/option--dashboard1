@@ -16,6 +16,7 @@
  * oi − prev_oi from the chain itself.
  */
 const axios = require("axios");
+const zlib = require("zlib");
 const { ACCESS_TOKEN, HOST, ORDER_HOST, CONFIG } = require("./config");
 const { todayIST } = require("./clock");
 
@@ -180,6 +181,35 @@ async function fetchDailyCandles(instrumentKey, calendarDaysBack) {
     .sort((a, b) => new Date(a.time) - new Date(b.time));
 }
 
+// Full market quotes for one or more instrument keys in a single call
+// (v2/market-quote/quotes, comma-separated keys). Each row carries
+// last_price, oi, volume and the top-5 bid/ask depth. QUIRK: the response
+// object is keyed by "EXCHANGE:TradingSymbol", NOT by instrument key —
+// every row carries its instrument_token (= the key), so the result is
+// re-indexed into a Map keyed by instrument key for callers.
+async function fetchQuotes(instrumentKeys) {
+  const response = await axios.get(`${HOST}v2/market-quote/quotes`, {
+    headers: authHeaders(),
+    params: { instrument_key: instrumentKeys.join(",") }
+  });
+  const byKey = new Map();
+  for (const row of Object.values(response.data?.data || {})) {
+    if (row?.instrument_token) byKey.set(row.instrument_token, row);
+  }
+  return byKey;
+}
+
+// Download and parse the NSE instruments master (every NSE segment,
+// including F&O). Several MB gzipped — called ONCE at startup by the
+// contract auto-resolver, never on the hot path.
+async function fetchInstruments() {
+  const response = await axios.get(
+    "https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz",
+    { responseType: "arraybuffer", timeout: 120000 }
+  );
+  return JSON.parse(zlib.gunzipSync(Buffer.from(response.data)).toString("utf8"));
+}
+
 // Fetch the demat long-term holdings from the portfolio endpoint.
 async function fetchHoldings() {
   const response = await axios.get(`${HOST}v2/portfolio/long-term-holdings`, {
@@ -230,6 +260,8 @@ module.exports = {
   fetchMarketData,
   fetchCandles,
   fetchDailyCandles,
+  fetchQuotes,
+  fetchInstruments,
   fetchHoldings,
   fetchPositions,
   placeOrder
