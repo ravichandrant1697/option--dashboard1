@@ -59,6 +59,9 @@
  *   LIVE_TRADING=1 optional — enable REAL orders (also needs typed YES)
  *   UPSTOX_WS_URL  optional — JSON-relay stream URL (needs npm install ws)
  *   INSTRUMENT_KEY / EXPIRY_DATE / STRIKE_DIFF — headless config (tick mode)
+ *   FUTURES_KEY    optional — near-month futures key for the build-up gate
+ *                  (expiry and futures key otherwise auto-resolve at startup
+ *                  from the NSE instruments master)
  *   AUTO_EXIT=1    optional — live loop exits once the trading day ends
  *   SESSION_END    optional — "HH:MM" IST; session mode exits past this time
  *
@@ -76,6 +79,7 @@ const { notify } = require("./notify");
 
 const { loadWorkbookCache } = require("./workbook");
 const { initState } = require("./state");
+const { autoResolveContracts } = require("./instruments");
 const { loadTuning, runTuning } = require("./tuning");
 const { connectStream } = require("./stream");
 const { run } = require("./engine");
@@ -107,7 +111,8 @@ if (mode === "backtest") {
     applyEnvConfig();
     activateHorizon(process.env.HORIZON);
 
-    
+    console.log("Resolving contracts (expiry + futures key)...");
+    await autoResolveContracts();
 
     console.log("Loading workbook cache...");
     loadWorkbookCache();
@@ -144,6 +149,8 @@ if (mode === "backtest") {
     applyEnvConfig();
     activateHorizon(process.env.HORIZON);
 
+    console.log("Resolving contracts (expiry + futures key)...");
+    await autoResolveContracts();
 
     console.log("Loading workbook...");
     loadWorkbookCache();
