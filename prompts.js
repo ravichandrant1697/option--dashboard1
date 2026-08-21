@@ -5,6 +5,7 @@
 const readline = require("readline");
 const { CONFIG, LOT_SIZE, RISK_REWARD } = require("./config");
 const { activateHorizon } = require("./horizons");
+const { autoResolveContracts } = require("./instruments");
 const runtime = require("./runtime");
 
 // Ask one question on the terminal and resolve with the trimmed answer.
@@ -41,6 +42,12 @@ async function setupInstrument() {
     const key = await ask("Upstox instrument key of the stock (e.g. NSE_EQ|INE002A01018): ");
     if (key) CONFIG.instrumentKey = key;
   }
+
+  // Auto-resolve the chosen underlying's contracts BEFORE the expiry
+  // prompt, so the default the prompt shows IS the nearest live expiry
+  // (typing a date still overrides it). Also fills CONFIG.futuresKey for
+  // the futures-buildup gate.
+  await autoResolveContracts();
 
   // Expiry date — NIFTY has weekly expiries, stocks are monthly.
   while (true) {
