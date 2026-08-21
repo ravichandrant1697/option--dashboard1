@@ -1,3 +1,4 @@
+
 /**
  * WORKBOOK — the Excel journal. In-memory cache of every sheet, loaded
  * once at startup, WRITE-ONLY afterwards. Market data is DATE-SCOPED:
@@ -75,6 +76,9 @@ function toDashboardRow(result, plan) {
     AvgGamma: result.avgGamma,
     AvgVega: result.avgVega,
     CandleTrend: result.candleTrend ?? "",
+    VWAP: result.vwap ?? "",
+    VolSurge: result.volumeSurge ?? "",
+    FutBuildup: result.futuresBuildup ?? "",
     Confidence: result.confidence,
     Strategy1: result.strategy1,
     Strategy1Score: result.strategy1Score,
