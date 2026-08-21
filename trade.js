@@ -9,12 +9,12 @@ const {
   CONFIG,
   MIN_EDGE_MULTIPLE,
   OI_STRONG_RATIO,
-  RISK_REWARD
+  BLOCK_NAKED_LEGS
 } = require("./config");
 const { daysUntil, istTimestamp } = require("./clock");
 const { getActiveHorizon } = require("./horizons");
 const runtime = require("./runtime");
-const { placeOrder } = require("./upstox-api");
+const { placeOrder, fetchQuotes } = require("./upstox-api");
 const { notify } = require("./notify");
 const { getState, saveState } = require("./state");
 const { recommend, toLegs } = require("./strategies");
@@ -76,8 +76,9 @@ async function executeLegs(pos, entry) {
 // plan; they set plan.blocked with the reason, the Dashboard row records
 // it in the Blocked column, and the engine refuses to open the position.
 // Returns null only when there is no signal to price at all (confidence
-// below the filter, no strategy, no quote).
-function buildTradePlan(result, chain) {
+// below the filter, no strategy, no quote). Async since 2026-08-20: the
+// depth gate fetches live bid/ask for the legs before approving an entry.
+async function buildTradePlan(result, chain) {
   if (result.confidence < RULES.minConfidence) return null; // trade filter
 
   const horizon = getActiveHorizon();
@@ -120,11 +121,63 @@ function buildTradePlan(result, chain) {
     if (!matches) return null;
   }
 
+  // Execution gate (day-anchor alignment): a directional entry must sit on
+  // the day-drift side of the anchor — Bearish only below it, Bullish only
+  // above. The anchor is today's VWAP when candle data is in (the proper
+  // intraday value anchor: volume-weighted, not just the first print),
+  // falling back to the session's first spot reading. Signals against the
+  // day's drift were the bleed: persisted-Bearish reads on the wrong side
+  // flipped from 67% to 27% accurate. Range entries exempt.
+  const vwap = runtime.getVwap();
+  const anchor = vwap ?? getState().dayOpenSpot;
+  const anchorName = vwap != null ? "VWAP" : "day open";
+  if (!blocked && RULES.dayOpenAlignment && anchor != null && result.bias !== "Range") {
+    const aligned =
+      (result.bias === "Bullish" && result.spot > anchor) ||
+      (result.bias === "Bearish" && result.spot < anchor);
+    if (!aligned) {
+      blocked = `bias ${result.bias} vs spot ${result.spot} on wrong side of ${anchorName} ${anchor}`;
+      console.log(`⛔ ENTRY gate (day-anchor alignment): ${blocked} — signal still logged`);
+    }
+  }
+
+  // Execution gate (volume surge): a directional move without volume was
+  // the recorded trap — low-volume drifts mean-reverted. Needs the latest
+  // 5-min candle volume ≥ volumeSurgeMin × the day's average; the check
+  // drops out while candle history is too short (surge null) or when
+  // volumeSurgeMin is 0.
+  const surge = runtime.getVolumeSurge();
+  if (!blocked && RULES.volumeSurgeMin && surge != null && result.bias !== "Range" &&
+      surge < RULES.volumeSurgeMin) {
+    blocked = `volume ${surge}× avg < ${RULES.volumeSurgeMin}× required`;
+    console.log(`⛔ ENTRY gate (volume surge): ${blocked} — signal still logged`);
+  }
+
+  // Execution gate (futures build-up): the near-month future is ONE clean
+  // price+OI series — when its flow contradicts the option-chain bias
+  // (e.g. Long Buildup while the chain reads Bearish), trust the future
+  // and stand down. Inactive without CONFIG.futuresKey / quote history;
+  // a Neutral read passes.
+  const fut = runtime.getFuturesBuildup();
+  if (!blocked && fut && fut.direction !== "Neutral" && result.bias !== "Range" &&
+      fut.direction !== result.bias) {
+    blocked = `futures ${fut.label} (${fut.direction}) contradicts ${result.bias} bias`;
+    console.log(`⛔ ENTRY gate (futures build-up): ${blocked} — signal still logged`);
+  }
+
   // Best-scored strategy that tuning hasn't blocked (falls through to the
-  // #2 / #3 strategy when the top one has proven negative expectancy)
+  // #2 / #3 strategy when the top one has proven negative expectancy).
+  // Naked long options are blocked STRUCTURALLY on the stock engine
+  // (BLOCK_NAKED_LEGS): 0 wins in 8 journal trades, −₹5,133 — and the
+  // tuner's own blocklist resets whenever the regime date moves.
+  const NAKED_STRATEGIES = ["Buy Call", "Buy Put"];
   const chosen = [result.strategy1, result.strategy2, result.strategy3]
     .filter(Boolean)
-    .find(s => !tuning.blockedStrategies.includes(s));
+    .find(
+      s =>
+        !tuning.blockedStrategies.includes(s) &&
+        !(BLOCK_NAKED_LEGS && NAKED_STRATEGIES.includes(s))
+    );
   if (!chosen) return null;
 
   const rec = recommend(chosen, result.atmStrike);
@@ -148,11 +201,13 @@ function buildTradePlan(result, chain) {
   // Conviction mode from the OI flow behind this signal:
   //   dominant side ≥ OI_STRONG_RATIO (2.5×) → "ride": no fixed target,
   //   the signal reversal takes the profit. Limited support → "scalp":
-  //   bank the 5–10 pt band. Range structures keep the % rule.
+  //   bank the premium-relative band (SCALP_TARGET_PCT). Range structures
+  //   keep the % rule.
   // NAKED legs (single leg) always scalp, never ride — their trigger
   // already requires ≥ 2.5× dominance, so without this they would always
-  // ride; the point of a naked ATM option here is the quick 5–10 pt take,
-  // not holding unhedged theta/vega until the flow reverses.
+  // ride; the point of a naked ATM option here is the quick band take,
+  // not holding unhedged theta/vega until the flow reverses. (Moot while
+  // BLOCK_NAKED_LEGS keeps single legs out entirely.)
   const dominance =
     result.bias === "Bullish" ? result.bullishOI / Math.max(1, result.bearishOI) :
     result.bias === "Bearish" ? result.bearishOI / Math.max(1, result.bullishOI) : 0;
@@ -161,8 +216,12 @@ function buildTradePlan(result, chain) {
     result.bias === "Range" ? "default" :
     dominance >= OI_STRONG_RATIO ? "ride" : "scalp";
   const { stopDist, targetDist, lockDist } = exitLevels(netEntry, exitMode, legs.length === 1);
-  // reference target for gates that need a number in ride mode (no target)
-  const refTarget = targetDist ?? stopDist * RISK_REWARD;
+  // Reference capture for gates that need a number in ride mode (no fixed
+  // target). 1R (stopDist), NOT stop × RISK_REWARD: rides exit on signal
+  // reversal, and the journal shows their realized capture is nowhere near
+  // 2R — pricing the cost floor off an aspirational 2R let structurally
+  // unprofitable trades (₹37 typical move vs ₹118 charges) through.
+  const refTarget = targetDist ?? stopDist;
 
   // Theta gate (multi-day horizons, DEBIT structures only): time decay
   // over the planned hold must not eat more than half the target move —
@@ -213,6 +272,38 @@ function buildTradePlan(result, chain) {
     }
   }
 
+  // Execution gate (depth): the LAST gate, and the only one that costs an
+  // API call — so it runs only when everything else already passed. Sums
+  // each leg's half-spread ((ask − bid) / 2 = the slippage of a market
+  // order vs mid); stock-option books are wide enough (₹0.3–1 on a ₹5–10
+  // leg) to eat the whole edge before the market moves. Missing depth or
+  // a failed quote SKIPS the gate (paper mode still works offline).
+  if (!blocked && RULES.maxSpreadCostFrac && (lots || 1) >= 1) {
+    const keys = legs.map(l => l.instrument_key).filter(Boolean);
+    if (keys.length === legs.length) {
+      try {
+        const quotes = await fetchQuotes(keys);
+        let spreadCost = 0;
+        let covered = true;
+        for (const leg of legs) {
+          const d = quotes.get(leg.instrument_key)?.depth;
+          const bid = d?.buy?.[0]?.price;
+          const ask = d?.sell?.[0]?.price;
+          if (!bid || !ask || ask <= bid) { covered = false; break; }
+          spreadCost += (ask - bid) / 2;
+        }
+        if (covered && spreadCost > RULES.maxSpreadCostFrac * refTarget) {
+          blocked =
+            `bid-ask cost ${spreadCost.toFixed(2)} pts > ` +
+            `${RULES.maxSpreadCostFrac}× target ${refTarget.toFixed(2)}`;
+          console.log(`⛔ ENTRY gate (depth): ${blocked} — signal still logged`);
+        }
+      } catch (e) {
+        console.log(`⏭️ Depth gate skipped — quote failed: ${e.response?.status || e.message}`);
+      }
+    }
+  }
+
   return { rec, legs, netEntry, stopDist, targetDist, lockDist, exitMode, lots, estCharges: estCharges ?? 0, blocked };
 }
 
@@ -231,7 +322,7 @@ async function openPosition(result, plan) {
     netEntry: plan.netEntry,
     stopDist: plan.stopDist,
     targetDist: plan.targetDist, // null = ride mode (no fixed target)
-    lockDist: plan.lockDist ?? null, // scalp only: profit floor of the 5–10 band
+    lockDist: plan.lockDist ?? null, // scalp only: premium-relative profit floor
     exitMode: plan.exitMode,     // ride | scalp | default — journaled for tuning
     estCharges: plan.estCharges, // Upstox round-trip estimate, deducted at close
     confidence: result.confidence,
