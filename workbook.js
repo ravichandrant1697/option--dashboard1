@@ -1,4 +1,3 @@
-
 /**
  * WORKBOOK — the Excel journal. In-memory cache of every sheet, loaded
  * once at startup, WRITE-ONLY afterwards. Market data is DATE-SCOPED:

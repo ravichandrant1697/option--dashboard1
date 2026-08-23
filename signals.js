@@ -103,6 +103,7 @@ async function refreshIntradayTrend() {
     // fewer than six 5-min candles — e.g. the first ~30 min of the session
     runtime.setCandleTrend(null);
     runtime.setVwap(null);
+    runtime.setVwapRef(null);
     runtime.setVolumeSurge(null);
     return;
   }
@@ -113,23 +114,47 @@ async function refreshIntradayTrend() {
   const trend = pct > 0.1 ? "Up" : pct < -0.1 ? "Down" : "Flat";
   runtime.setCandleTrend(trend);
 
+  // Volume source: INDEX instruments trade no volume (their candles carry
+  // 0), so VWAP/volume fall back to the near-month FUTURES candles when
+  // the underlying's are volume-less and a futures key is known. vwapRef
+  // keeps the comparison basis-consistent: futures trade at a basis to
+  // spot, so a futures-sourced VWAP is compared against the FUTURES price
+  // (the same candles' last close), never against index spot. vwapRef
+  // null = VWAP is in underlying space, compare live spot as usual.
+  let volCandles = candles;
+  let vwapRef = null;
+  if (!candles.some(c => c.volume > 0) && CONFIG.futuresKey) {
+    try {
+      volCandles = await fetchCandles(CONFIG.futuresKey, "minutes", 5);
+      vwapRef = volCandles.length ? volCandles[volCandles.length - 1].close : null;
+    } catch (e) {
+      volCandles = [];
+      console.error("Futures candles failed — VWAP/volume gates inactive:", e.response?.status || e.message);
+    }
+  }
+
   let pv = 0, vol = 0;
-  for (const c of candles) {
+  for (const c of volCandles) {
     const typical = (c.high + c.low + c.close) / 3;
     pv += typical * (c.volume || 0);
     vol += c.volume || 0;
   }
   const vwap = vol > 0 ? Number((pv / vol).toFixed(2)) : null;
   runtime.setVwap(vwap);
+  runtime.setVwapRef(vwap != null ? vwapRef : null);
 
-  const rest = candles.slice(0, -2);
-  const restAvg = rest.reduce((s, c) => s + (c.volume || 0), 0) / rest.length;
-  const lastVol = Math.max(...candles.slice(-2).map(c => c.volume || 0));
-  const surge = restAvg > 0 ? Number((lastVol / restAvg).toFixed(2)) : null;
+  let surge = null;
+  if (volCandles.length >= 6) {
+    const rest = volCandles.slice(0, -2);
+    const restAvg = rest.reduce((s, c) => s + (c.volume || 0), 0) / rest.length;
+    const lastVol = Math.max(...volCandles.slice(-2).map(c => c.volume || 0));
+    surge = restAvg > 0 ? Number((lastVol / restAvg).toFixed(2)) : null;
+  }
   runtime.setVolumeSurge(surge);
 
   console.log(
-    `🕯️ CANDLE TREND (30m): ${trend} (${pct.toFixed(2)}%) | VWAP ${vwap ?? "n/a"} | vol surge ${surge ?? "n/a"}×`
+    `🕯️ CANDLE TREND (30m): ${trend} (${pct.toFixed(2)}%) | VWAP ${vwap ?? "n/a"}` +
+      `${vwapRef != null ? ` (futures, ref ${vwapRef})` : ""} | vol surge ${surge ?? "n/a"}×`
   );
 }
 

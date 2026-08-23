@@ -31,6 +31,8 @@ const CONFIG = {
   portfolioRefreshMs: 15 * 60000, // snapshot long-term holdings every 15 min
   positionsRefreshMs: 5 * 60000,  // snapshot broker F&O positions every 5 min
   candleRefreshMs: 5 * 60000,     // refresh the 5-minute candle trend every 5 min
+  fastExitMs: 45000,              // between-poll exit check (0 = off) — price-only,
+                                  // one quote call, and only while a position is open
   wsUrl: process.env.UPSTOX_WS_URL || "" // WebSocket stream URL (optional)
 };
 

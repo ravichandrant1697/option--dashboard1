@@ -6,6 +6,9 @@
  *
  *   candleTrend  written by signals.refreshCandleTrend  ("Up"|"Down"|"Flat"|null)
  *   vwap         written by signals.refreshIntradayTrend (today's VWAP | null)
+ *   vwapRef      written by signals.refreshIntradayTrend — the price to compare
+ *                against vwap when it was computed from FUTURES candles (indices
+ *                trade no volume); null = compare live spot (underlying-space VWAP)
  *   volumeSurge  written by signals.refreshIntradayTrend (latest/avg 5-min volume | null)
  *   futuresBuildup written by signals.updateFuturesBuildup ({label, direction} | null)
  *   lastResult   written by engine.run every poll        (latest analyze() output)
@@ -16,6 +19,7 @@
 
 let candleTrend = null;
 let vwap = null;
+let vwapRef = null;
 let volumeSurge = null;
 let futuresBuildup = null;
 let lastResult = null;
@@ -33,6 +37,8 @@ module.exports = {
   setCandleTrend: v => { candleTrend = v; },
   getVwap: () => vwap,
   setVwap: v => { vwap = v; },
+  getVwapRef: () => vwapRef,
+  setVwapRef: v => { vwapRef = v; },
   getVolumeSurge: () => volumeSurge,
   setVolumeSurge: v => { volumeSurge = v; },
   getFuturesBuildup: () => futuresBuildup,

@@ -131,12 +131,17 @@ async function buildTradePlan(result, chain) {
   const vwap = runtime.getVwap();
   const anchor = vwap ?? getState().dayOpenSpot;
   const anchorName = vwap != null ? "VWAP" : "day open";
+  // Compare in the SAME instrument space as the anchor: a futures-sourced
+  // VWAP (index underlyings — see signals.js) is compared against the
+  // futures price (vwapRef), never index spot, because futures carry a
+  // basis over spot that would tilt the gate.
+  const anchorPrice = (vwap != null && runtime.getVwapRef() != null) ? runtime.getVwapRef() : result.spot;
   if (!blocked && RULES.dayOpenAlignment && anchor != null && result.bias !== "Range") {
     const aligned =
-      (result.bias === "Bullish" && result.spot > anchor) ||
-      (result.bias === "Bearish" && result.spot < anchor);
+      (result.bias === "Bullish" && anchorPrice > anchor) ||
+      (result.bias === "Bearish" && anchorPrice < anchor);
     if (!aligned) {
-      blocked = `bias ${result.bias} vs spot ${result.spot} on wrong side of ${anchorName} ${anchor}`;
+      blocked = `bias ${result.bias} vs ${anchorPrice} on wrong side of ${anchorName} ${anchor}`;
       console.log(`⛔ ENTRY gate (day-anchor alignment): ${blocked} — signal still logged`);
     }
   }

@@ -92,7 +92,7 @@ try {
   console.warn("⚠️ instruments.js not found — contract auto-resolution disabled, using configured expiry/futures key");
 }
 const { connectStream } = require("./stream");
-const { run } = require("./engine");
+const { run, fastExitCheck } = require("./engine");
 const { runBacktest } = require("./backtest");
 const { setupInstrument } = require("./prompts");
 
@@ -146,6 +146,15 @@ if (mode === "backtest") {
       console.log("Running next cycle...");
       await run();
     }, CONFIG.pollMs);
+
+    // Between-poll exit guard: price-only, fires only while a position is
+    // open (engine.fastExitCheck). Entries stay on the 3-min chain poll.
+    if (CONFIG.fastExitMs) {
+      console.log(`Fast exit check every ${CONFIG.fastExitMs / 1000}s (while a position is open)`);
+      setInterval(() => {
+        fastExitCheck().catch(e => console.error("Fast exit check failed:", e.message));
+      }, CONFIG.fastExitMs);
+    }
 
   })();
 
@@ -207,6 +216,15 @@ if (mode === "backtest") {
       console.log("Running next cycle...");
       await run();
     }, CONFIG.pollMs);
+
+    // Between-poll exit guard: price-only, fires only while a position is
+    // open (engine.fastExitCheck). Entries stay on the 3-min chain poll.
+    if (CONFIG.fastExitMs) {
+      console.log(`Fast exit check every ${CONFIG.fastExitMs / 1000}s (while a position is open)`);
+      setInterval(() => {
+        fastExitCheck().catch(e => console.error("Fast exit check failed:", e.message));
+      }, CONFIG.fastExitMs);
+    }
 
   })();
 

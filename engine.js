@@ -261,4 +261,58 @@ async function run() {
   console.log("==================================================");
 }
 
-module.exports = { run };
+
+// FAST EXIT CHECK — the between-poll exit guard. ENTRIES need the whole
+// chain and fresh OI (Upstox refreshes those on a 3-min cadence, so
+// polling faster just re-reads stale OI), but EXITS only need the legs'
+// prices: one quote call, and only while a position is actually open.
+//
+// This is what makes STOP / TARGET / PROFIT_LOCK behave as designed. With
+// 3-minute vision a scalp can spike past its lock and round-trip back
+// inside a single poll gap, unseen — the first 36 journal trades contain
+// zero PROFIT_LOCK exits and exactly one TARGET.
+//
+// The signal-change branch reuses the LAST poll's analysis: checkExit
+// counts a miss once per result.timestamp, so repeated fast checks
+// against the same analysis cannot inflate the streak. closingIds guards
+// the poll/fast-check race the same way it guards the stream sweep.
+async function fastExitCheck() {
+  const state = getState();
+  if (!state.open.length) return;                 // nothing to guard
+  if (!isMarketOpen() && !process.env.FORCE_RUN) return;
+  const lastResult = runtime.getLastResult();
+  if (!lastResult) return;                        // no analysis yet this session
+
+  for (const pos of [...state.open]) {
+    if (runtime.closingIds.has(pos.id)) continue;
+
+    const keys = pos.legs.map(l => l.instrument_key).filter(Boolean);
+    if (keys.length !== pos.legs.length) continue; // unpriceable — the poll handles it
+
+    let quotes;
+    try {
+      quotes = await fetchQuotes(keys);
+    } catch (e) {
+      console.error("Fast exit check — quote failed:", e.response?.status || e.message);
+      return;                                      // retry on the next tick
+    }
+
+    let netNow = 0;
+    let complete = true;
+    for (const leg of pos.legs) {
+      const ltp = quotes.get(leg.instrument_key)?.last_price;
+      if (ltp == null) { complete = false; break; }
+      netNow += leg.side === "BUY" ? ltp : -ltp;
+    }
+    if (!complete) continue;
+
+    const exit = checkExit(pos, netNow, lastResult);
+    if (exit) {
+      console.log(`⚡ FAST EXIT -> ${exit.reason} | ${exit.outcome} | net ${netNow.toFixed(2)}`);
+      await closePosition(pos, netNow, exit.outcome, exit.reason);
+      saveState();
+    }
+  }
+}
+
+module.exports = { run, fastExitCheck };

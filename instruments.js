@@ -29,9 +29,9 @@ function expiryToIST(ms) {
 // optionLotSize } (fields null when not found). "Nearest" = smallest
 // expiry ≥ today; when that is TODAY and a later contract exists, the
 // later one wins (expiry-day roll).
-function resolveFromRows(rows, underlyingKey, today) {
+function resolveFromRows(rows, underlyingKey, today, exchange = "NSE") {
   const mine = rows.filter(
-    r => r.underlying_key === underlyingKey && r.segment === "NSE_FO"
+    r => r.underlying_key === underlyingKey && r.segment === exchange + "_FO"
   );
 
   const nearest = list => {
@@ -71,10 +71,13 @@ async function autoResolveContracts() {
     return;
   }
 
+  // SENSEX (and any BSE_*) underlying lives on BSE — everything else NSE.
+  const exchange = CONFIG.instrumentKey.startsWith("BSE") ? "BSE" : "NSE";
+
   try {
-    console.log("📥 Resolving contracts from the NSE instruments master...");
-    const rows = await fetchInstruments();
-    const r = resolveFromRows(rows, CONFIG.instrumentKey, todayIST());
+    console.log(`📥 Resolving contracts from the ${exchange} instruments master...`);
+    const rows = await fetchInstruments(exchange);
+    const r = resolveFromRows(rows, CONFIG.instrumentKey, todayIST(), exchange);
 
     if (needExpiry && r.expiryDate) {
       if (r.expiryDate !== CONFIG.expiryDate) {

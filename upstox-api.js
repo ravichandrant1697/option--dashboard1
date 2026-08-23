@@ -199,12 +199,13 @@ async function fetchQuotes(instrumentKeys) {
   return byKey;
 }
 
-// Download and parse the NSE instruments master (every NSE segment,
+// Download and parse an exchange's instruments master (every segment,
 // including F&O). Several MB gzipped — called ONCE at startup by the
-// contract auto-resolver, never on the hot path.
-async function fetchInstruments() {
+// contract auto-resolver, never on the hot path. exchange = "NSE" | "BSE"
+// (SENSEX contracts live on BSE).
+async function fetchInstruments(exchange = "NSE") {
   const response = await axios.get(
-    "https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz",
+    `https://assets.upstox.com/market-quote/instruments/exchange/${exchange}.json.gz`,
     { responseType: "arraybuffer", timeout: 120000 }
   );
   return JSON.parse(zlib.gunzipSync(Buffer.from(response.data)).toString("utf8"));
