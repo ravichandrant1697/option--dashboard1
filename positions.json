@@ -1,9 +1,57 @@
 {
   "date": "2026-08-25",
-  "open": [],
+  "open": [
+    {
+      "id": 1787650475613,
+      "openedAt": "2026-08-25 15:04:35",
+      "openedAtMs": 1787650475613,
+      "strategy": "Iron Condor",
+      "legs": [
+        {
+          "strike": 1030,
+          "type": "PE",
+          "side": "SELL",
+          "instrument_key": "NSE_FO|108258"
+        },
+        {
+          "strike": 1020,
+          "type": "PE",
+          "side": "BUY",
+          "instrument_key": "NSE_FO|147170"
+        },
+        {
+          "strike": 1050,
+          "type": "CE",
+          "side": "SELL",
+          "instrument_key": "NSE_FO|108259"
+        },
+        {
+          "strike": 1060,
+          "type": "CE",
+          "side": "BUY",
+          "instrument_key": "NSE_FO|147184"
+        }
+      ],
+      "lots": 1,
+      "netEntry": -7.449999999999999,
+      "stopDist": 3.7249999999999996,
+      "targetDist": 7.449999999999999,
+      "lockDist": null,
+      "exitMode": "default",
+      "estCharges": 276.01,
+      "confidence": 83,
+      "entryBias": "Range",
+      "trendAtEntry": "Flat",
+      "horizon": "intraday",
+      "product": "I",
+      "expiry": "2026-09-29",
+      "_signalMiss": 1,
+      "_lastMissTs": "2026-08-25 15:10:35"
+    }
+  ],
   "closedToday": [],
   "biasStreak": {
-    "bias": "Range",
+    "bias": "Bullish",
     "count": 1
   },
   "dayOpenSpot": 1039.5
