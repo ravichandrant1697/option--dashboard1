@@ -1,33 +1,10 @@
 {
-  "date": "2026-08-25",
+  "date": "2026-08-26",
   "open": [],
-  "closedToday": [
-    {
-      "PosId": 1787650475613,
-      "Timestamp": "2026-08-25 15:04:35",
-      "ExitTime": "2026-08-25 15:19:35",
-      "Horizon": "intraday",
-      "Expiry": "2026-09-29",
-      "Strategy": "Iron Condor",
-      "Legs": "SELL 1030PE | BUY 1020PE | SELL 1050CE | BUY 1060CE",
-      "Lots": 1,
-      "NetEntry": -7.45,
-      "NetExit": -7.45,
-      "Result": "LOSS",
-      "ExitReason": "SIGNAL_CHANGE",
-      "GrossPnL": 0,
-      "Charges": 276.01,
-      "PnL": -276.01,
-      "ExitMode": "default",
-      "RR": 2,
-      "Confidence": 83,
-      "EntryBias": "Range",
-      "TrendAtEntry": "Flat"
-    }
-  ],
+  "closedToday": [],
   "biasStreak": {
-    "bias": "Range",
-    "count": 1
+    "bias": "Bullish",
+    "count": 2
   },
-  "dayOpenSpot": 1039.5
+  "dayOpenSpot": 1058.9
 }
