@@ -1,42 +1,6 @@
 {
   "date": "2026-08-27",
-  "open": [
-    {
-      "id": 1787823468687,
-      "openedAt": "2026-08-27 15:07:48",
-      "openedAtMs": 1787823468687,
-      "strategy": "Bull Call Spread",
-      "legs": [
-        {
-          "strike": 1050,
-          "type": "CE",
-          "side": "BUY",
-          "instrument_key": "NSE_FO|108259"
-        },
-        {
-          "strike": 1060,
-          "type": "CE",
-          "side": "SELL",
-          "instrument_key": "NSE_FO|147184"
-        }
-      ],
-      "lots": 1,
-      "netEntry": 4.699999999999999,
-      "stopDist": 0.47,
-      "targetDist": 0.94,
-      "lockDist": 0.47,
-      "exitMode": "scalp",
-      "estCharges": 151.37,
-      "confidence": 83,
-      "entryBias": "Bullish",
-      "trendAtEntry": "Up",
-      "horizon": "intraday",
-      "product": "I",
-      "expiry": "2026-09-29",
-      "_signalMiss": 0,
-      "_lastMissTs": "2026-08-27 15:16:48"
-    }
-  ],
+  "open": [],
   "closedToday": [
     {
       "PosId": 1787816087972,
@@ -59,11 +23,33 @@
       "Confidence": 100,
       "EntryBias": "Bearish",
       "TrendAtEntry": "Down"
+    },
+    {
+      "PosId": 1787823468687,
+      "Timestamp": "2026-08-27 15:07:48",
+      "ExitTime": "2026-08-27 15:20:37",
+      "Horizon": "intraday",
+      "Expiry": "2026-09-29",
+      "Strategy": "Bull Call Spread",
+      "Legs": "BUY 1050CE | SELL 1060CE",
+      "Lots": 1,
+      "NetEntry": 4.7,
+      "NetExit": 4.45,
+      "Result": "LOSS",
+      "ExitReason": "SQUARE_OFF",
+      "GrossPnL": -187.5,
+      "Charges": 151.37,
+      "PnL": -338.87,
+      "ExitMode": "scalp",
+      "RR": 2,
+      "Confidence": 83,
+      "EntryBias": "Bullish",
+      "TrendAtEntry": "Up"
     }
   ],
   "biasStreak": {
-    "bias": "Bullish",
-    "count": 1
+    "bias": "Bearish",
+    "count": 3
   },
   "dayOpenSpot": 1045.8
 }
