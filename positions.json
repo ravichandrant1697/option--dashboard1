@@ -33,14 +33,14 @@
       "horizon": "intraday",
       "product": "I",
       "expiry": "2026-09-29",
-      "_signalMiss": 0,
-      "_lastMissTs": "2026-09-01 14:05:55"
+      "_signalMiss": 2,
+      "_lastMissTs": "2026-09-01 14:17:56"
     }
   ],
   "closedToday": [],
   "biasStreak": {
-    "bias": "Bearish",
-    "count": 1
+    "bias": "Bullish",
+    "count": 2
   },
   "dayOpenSpot": 1039.4
 }
