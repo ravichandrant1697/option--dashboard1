@@ -34,7 +34,7 @@
       "product": "I",
       "expiry": "2026-09-29",
       "_signalMiss": 0,
-      "_lastMissTs": "2026-09-02 11:45:19"
+      "_lastMissTs": "2026-09-02 12:12:19"
     }
   ],
   "closedToday": [
@@ -63,7 +63,7 @@
   ],
   "biasStreak": {
     "bias": "Bearish",
-    "count": 1
+    "count": 2
   },
   "dayOpenSpot": 1024.1
 }
