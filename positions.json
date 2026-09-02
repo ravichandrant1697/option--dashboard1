@@ -1,43 +1,30 @@
 {
   "date": "2026-09-02",
-  "open": [
+  "open": [],
+  "closedToday": [
     {
-      "id": 1788321258371,
-      "openedAt": "2026-09-02 09:24:18",
-      "openedAtMs": 1788321258371,
-      "strategy": "Bull Call Spread",
-      "legs": [
-        {
-          "strike": 1030,
-          "type": "CE",
-          "side": "BUY",
-          "instrument_key": "NSE_FO|108256"
-        },
-        {
-          "strike": 1040,
-          "type": "CE",
-          "side": "SELL",
-          "instrument_key": "NSE_FO|147171"
-        }
-      ],
-      "lots": 1,
-      "netEntry": 4.800000000000001,
-      "stopDist": 2.4000000000000004,
-      "targetDist": null,
-      "lockDist": null,
-      "exitMode": "ride",
-      "estCharges": 152.35,
-      "confidence": 80,
-      "entryBias": "Bullish",
-      "trendAtEntry": null,
-      "horizon": "intraday",
-      "product": "I",
-      "expiry": "2026-09-29",
-      "_signalMiss": 1,
-      "_lastMissTs": "2026-09-02 09:39:18"
+      "PosId": 1788321258371,
+      "Timestamp": "2026-09-02 09:24:18",
+      "ExitTime": "2026-09-02 09:43:03",
+      "Horizon": "intraday",
+      "Expiry": "2026-09-29",
+      "Strategy": "Bull Call Spread",
+      "Legs": "BUY 1030CE | SELL 1040CE",
+      "Lots": 1,
+      "NetEntry": 4.8,
+      "NetExit": 4.75,
+      "Result": "LOSS",
+      "ExitReason": "SIGNAL_CHANGE",
+      "GrossPnL": -37.5,
+      "Charges": 152.35,
+      "PnL": -189.85,
+      "ExitMode": "ride",
+      "RR": "",
+      "Confidence": 80,
+      "EntryBias": "Bullish",
+      "TrendAtEntry": ""
     }
   ],
-  "closedToday": [],
   "biasStreak": {
     "bias": "Bearish",
     "count": 1
