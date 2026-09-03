@@ -1,6 +1,6 @@
 {
-  "lastTuneDate": "2026-09-02",
-  "minConfidence": null,
+  "lastTuneDate": "2026-09-03",
+  "minConfidence": 90,
   "blockedStrategies": [],
   "requireTrendMatch": false
 }

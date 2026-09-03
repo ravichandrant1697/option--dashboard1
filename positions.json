@@ -1,46 +1,33 @@
 {
   "date": "2026-09-03",
-  "open": [
+  "open": [],
+  "closedToday": [
     {
-      "id": 1788414151093,
-      "openedAt": "2026-09-03 11:12:31",
-      "openedAtMs": 1788414151093,
-      "strategy": "Bear Put Spread",
-      "legs": [
-        {
-          "strike": 1030,
-          "type": "PE",
-          "side": "BUY",
-          "instrument_key": "NSE_FO|108258"
-        },
-        {
-          "strike": 1020,
-          "type": "PE",
-          "side": "SELL",
-          "instrument_key": "NSE_FO|147170"
-        }
-      ],
-      "lots": 1,
-      "netEntry": 4.300000000000001,
-      "stopDist": 2.1500000000000004,
-      "targetDist": null,
-      "lockDist": null,
-      "exitMode": "ride",
-      "estCharges": 142.53,
-      "confidence": 100,
-      "entryBias": "Bearish",
-      "trendAtEntry": "Down",
-      "horizon": "intraday",
-      "product": "I",
-      "expiry": "2026-09-29",
-      "_signalMiss": 0,
-      "_lastMissTs": "2026-09-03 15:05:29"
+      "PosId": 1788414151093,
+      "Timestamp": "2026-09-03 11:12:31",
+      "ExitTime": "2026-09-03 15:20:29",
+      "Horizon": "intraday",
+      "Expiry": "2026-09-29",
+      "Strategy": "Bear Put Spread",
+      "Legs": "BUY 1030PE | SELL 1020PE",
+      "Lots": 1,
+      "NetEntry": 4.3,
+      "NetExit": 5.05,
+      "Result": "WIN",
+      "ExitReason": "SQUARE_OFF",
+      "GrossPnL": 562.5,
+      "Charges": 142.53,
+      "PnL": 419.97,
+      "ExitMode": "ride",
+      "RR": "",
+      "Confidence": 100,
+      "EntryBias": "Bearish",
+      "TrendAtEntry": "Down"
     }
   ],
-  "closedToday": [],
   "biasStreak": {
-    "bias": "Range",
-    "count": 1
+    "bias": "Bearish",
+    "count": 2
   },
   "dayOpenSpot": 1028.2
 }
