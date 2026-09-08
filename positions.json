@@ -1,33 +1,10 @@
 {
-  "date": "2026-09-07",
+  "date": "2026-09-08",
   "open": [],
-  "closedToday": [
-    {
-      "PosId": 1788755640745,
-      "Timestamp": "2026-09-07 10:04:00",
-      "ExitTime": "2026-09-07 10:10:00",
-      "Horizon": "intraday",
-      "Expiry": "2026-09-29",
-      "Strategy": "Buy Put",
-      "Legs": "BUY 1010PE",
-      "Lots": 1,
-      "NetEntry": 16.35,
-      "NetExit": 16.9,
-      "Result": "WIN",
-      "ExitReason": "SIGNAL_CHANGE",
-      "GrossPnL": 412.5,
-      "Charges": 70.14,
-      "PnL": 342.36,
-      "ExitMode": "scalp",
-      "RR": 2,
-      "Confidence": 100,
-      "EntryBias": "Bearish",
-      "TrendAtEntry": "Down"
-    }
-  ],
+  "closedToday": [],
   "biasStreak": {
-    "bias": "Bearish",
-    "count": 2
+    "bias": "Bullish",
+    "count": 1
   },
-  "dayOpenSpot": 1015.4
+  "dayOpenSpot": 1003.7
 }
