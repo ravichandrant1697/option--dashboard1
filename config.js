@@ -72,6 +72,12 @@ const OI_STRONG_RATIO = 2.5;
 // lock LADDER — the highest rung the move has traded ABOVE is armed and a
 // pullback to it exits PROFIT_LOCK. Keep SCALP_LOCK_PCTS sorted ascending.
 const SCALP_TARGET_PCT = 0.3;  // scalp target = 30% of |net entry| (was 0.2)
+// 2026-09-11: the scalp/naked STOP is its own % of entry, no longer
+// target / RISK_REWARD (15%). With the lock ladder banking at 8/10/12.5%
+// a 15% stop needed > 62% wins to break even (realised: SENSEX 3/8, NIFTY
+// 1/10). Replaying 24 Aug – 10 Sep: 10% vs 15% = +₹113 on the same trades.
+// Target stays 30%, so the journal RR reads 3:1.
+const SCALP_STOP_PCT = 0.10;
 const SCALP_LOCK_PCTS = [0.08, 0.10, 0.125];
 const SCALP_LOCK_PCT = SCALP_LOCK_PCTS[0]; // first rung — kept for older callers
 
@@ -95,6 +101,12 @@ const BLOCK_NAKED_LEGS = false; // 2026-09-05: opened for the naked-only test we
 // blockedStrategies while the test runs.
 const NAKED_ONLY = true;
 const NAKED_MIN_SCORE = 100;
+// Confidence floor for the naked leg (2026-09-11) — used INSTEAD of the
+// tuner's RULES.minConfidence override while NAKED_ONLY runs. THIS bot's
+// tuner had raised minConfidence to 90 from 13 spread-era trades, which
+// turned every conf-83 naked read (41 Buy Call setups on 9–10 Sep) into a
+// silent NO TRADE (no Blocked reason). Same value as RULES.minConfidence.
+const NAKED_MIN_CONFIDENCE = 70;
 
 // Upstox NSE-options charge model (per executed ORDER — each leg is one
 // order, entry and exit are separate orders). Rates as of Oct 2024 revision.
@@ -124,10 +136,35 @@ const MIN_EDGE_MULTIPLE = 3;
 // 2026-08-21: stock-options retune (premium-relative scalps, naked block,
 // persistence 3, day-open gate) — the Aug 18–20 SBIN trades measured the
 // NIFTY-calibrated policy and are not evidence for this one.
-const TUNING_REGIME_START = "2026-08-21";
+// 2026-09-11: moved to the naked-only start — spread trades are not
+// evidence for the naked policy (they set this bot's minConfidence to 90).
+const TUNING_REGIME_START = "2026-09-05";
 
 const RULES = {
   minConfidence: 70,          // trade filter: below this → NO TRADE
+  // Entry window (2026-09-11), IST. No NEW entries before 10:00 — the first
+  // volume-surge reading (09:45) compares the opening candle against five
+  // others and always looks like a surge (10 Sep SENSEX 09:45: −₹1,317) —
+  // and none after 14:50 (< 30 min to the square-off; 9 Sep NIFTY 15:06:
+  // charges only). Replay showed SENSEX's 14:35/14:52 entries were its
+  // best, so the cap is 14:50, not 14:30. Exits are never gated by this.
+  entryStartHour: 10, entryStartMin: 0,
+  entryEndHour: 14, entryEndMin: 50,
+  // Scalp time stop (2026-09-11): a scalp/naked position that has armed NO
+  // profit-lock rung within this many minutes exits TIME_STOP — Range drift
+  // is not a SIGNAL_CHANGE and intraday has no maxHoldDays, so the 10 Sep
+  // SENSEX put sat 147 min for a −15% stop. 0 = off.
+  scalpTimeStopMin: 45,
+  // Day-extreme retest gate (2026-09-11): skip a Bearish entry when spot is
+  // ABOVE a day low set ≥ extremeRetestAgeMin ago by less than
+  // extremeRetestPct (put bought at support — 9 Sep NIFTY 12:04, 9 pts
+  // above the low: −₹1,143), and a Bullish entry symmetrically under an old
+  // day high (25 Aug SENSEX 11:59: −₹679). A fresh break passes. In replay
+  // this was the single biggest lever (OFF −₹1,475 → ON +₹356 over 14
+  // days) but on 2–4 events — 0.10% is the middle of the range that held.
+  // 0 = off.
+  extremeRetestPct: 0.001,
+  extremeRetestAgeMin: 30,
   // Entry-side persistence: the CURRENT bias must have held for this many
   // consecutive polls (including this one) before any entry is allowed.
   // 3 polls = ~9 min of agreement at the 3-min cadence. On the SBIN
@@ -204,11 +241,13 @@ module.exports = {
   RISK_REWARD,
   OI_STRONG_RATIO,
   SCALP_TARGET_PCT,
+  SCALP_STOP_PCT,
   SCALP_LOCK_PCT,
   SCALP_LOCK_PCTS,
   BLOCK_NAKED_LEGS,
   NAKED_ONLY,
   NAKED_MIN_SCORE,
+  NAKED_MIN_CONFIDENCE,
   COSTS,
   MIN_EDGE_MULTIPLE,
   TUNING_REGIME_START,
