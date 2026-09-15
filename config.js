@@ -160,10 +160,13 @@ const RULES = {
   // extremeRetestPct (put bought at support — 9 Sep NIFTY 12:04, 9 pts
   // above the low: −₹1,143), and a Bullish entry symmetrically under an old
   // day high (25 Aug SENSEX 11:59: −₹679). A fresh break passes. In replay
-  // this was the single biggest lever (OFF −₹1,475 → ON +₹356 over 14
-  // days) but on 2–4 events — 0.10% is the middle of the range that held.
+  // this was the single biggest lever (OFF −₹1,475 → ON +₹356 at 0.05–0.10%,
+  // +₹1,276 at 0.15–0.25%) but on 2–4 events. 2026-09-15: 0.10 → 0.15% —
+  // the 11 Sep SBIN 13:47/13:56 puts were bought 0.11–0.13% above the day
+  // low (the gate had just blocked the same setup at 0.02–0.09%) and lost
+  // ₹1.1–1.5k each; 0.15% blocks them and sits inside the replay plateau.
   // 0 = off.
-  extremeRetestPct: 0.001,
+  extremeRetestPct: 0.0015,
   extremeRetestAgeMin: 30,
   // Entry-side persistence: the CURRENT bias must have held for this many
   // consecutive polls (including this one) before any entry is allowed.
