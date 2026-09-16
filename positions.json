@@ -1,10 +1,43 @@
 {
   "date": "2026-09-16",
-  "open": [],
+  "open": [
+    {
+      "id": 1789541160219,
+      "openedAt": "2026-09-16 12:16:00",
+      "openedAtMs": 1789541160220,
+      "strategy": "Buy Call",
+      "legs": [
+        {
+          "strike": 980,
+          "type": "CE",
+          "side": "BUY",
+          "instrument_key": "NSE_FO|147149"
+        }
+      ],
+      "lots": 1,
+      "netEntry": 18.55,
+      "stopDist": 1.8550000000000002,
+      "targetDist": 5.565,
+      "lockDist": 1.484,
+      "lockDists": [
+        1.484,
+        1.8550000000000002,
+        2.31875
+      ],
+      "exitMode": "scalp",
+      "estCharges": 73.23,
+      "confidence": 83,
+      "entryBias": "Bullish",
+      "trendAtEntry": "Up",
+      "horizon": "intraday",
+      "product": "I",
+      "expiry": "2026-09-29"
+    }
+  ],
   "closedToday": [],
   "biasStreak": {
     "bias": "Bullish",
-    "count": 58
+    "count": 61
   },
   "dayOpenSpot": 979,
   "dayExtremes": {
