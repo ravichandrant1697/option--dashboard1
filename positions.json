@@ -1,61 +1,16 @@
 {
-  "date": "2026-09-16",
+  "date": "2026-09-17",
   "open": [],
-  "closedToday": [
-    {
-      "PosId": 1789541160219,
-      "Timestamp": "2026-09-16 12:16:00",
-      "ExitTime": "2026-09-16 13:01:26",
-      "Horizon": "intraday",
-      "Expiry": "2026-09-29",
-      "Strategy": "Buy Call",
-      "Legs": "BUY 980CE",
-      "Lots": 1,
-      "NetEntry": 18.55,
-      "NetExit": 19.65,
-      "Result": "WIN",
-      "ExitReason": "TIME_STOP",
-      "GrossPnL": 825,
-      "Charges": 73.23,
-      "PnL": 751.77,
-      "ExitMode": "scalp",
-      "RR": 3,
-      "Confidence": 83,
-      "EntryBias": "Bullish",
-      "TrendAtEntry": "Up"
-    },
-    {
-      "PosId": 1789548522877,
-      "Timestamp": "2026-09-16 14:18:42",
-      "ExitTime": "2026-09-16 15:03:43",
-      "Horizon": "intraday",
-      "Expiry": "2026-09-29",
-      "Strategy": "Buy Call",
-      "Legs": "BUY 990CE",
-      "Lots": 1,
-      "NetEntry": 15,
-      "NetExit": 14.2,
-      "Result": "LOSS",
-      "ExitReason": "TIME_STOP",
-      "GrossPnL": -600,
-      "Charges": 68.25,
-      "PnL": -668.25,
-      "ExitMode": "scalp",
-      "RR": 3,
-      "Confidence": 83,
-      "EntryBias": "Bullish",
-      "TrendAtEntry": "Up"
-    }
-  ],
+  "closedToday": [],
   "biasStreak": {
     "bias": "Bullish",
-    "count": 118
+    "count": 2
   },
-  "dayOpenSpot": 979,
+  "dayOpenSpot": 992.3,
   "dayExtremes": {
-    "low": 977.5,
-    "lowTs": 1789532158223,
-    "high": 991.4,
-    "highTs": 1789552843029
+    "low": 992.3,
+    "lowTs": 1789616719711,
+    "high": 994,
+    "highTs": 1789616901221
   }
 }
