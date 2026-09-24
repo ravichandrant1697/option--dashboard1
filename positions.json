@@ -1,39 +1,16 @@
 {
-  "date": "2026-09-23",
+  "date": "2026-09-24",
   "open": [],
-  "closedToday": [
-    {
-      "PosId": 1790146988019,
-      "Timestamp": "2026-09-23 12:33:08",
-      "ExitTime": "2026-09-23 14:14:39",
-      "Horizon": "intraday",
-      "Expiry": "2026-09-29",
-      "Strategy": "Buy Call",
-      "Legs": "BUY 990CE",
-      "Lots": 1,
-      "NetEntry": 10.45,
-      "NetExit": 11.15,
-      "Result": "WIN",
-      "ExitReason": "PROFIT_LOCK",
-      "GrossPnL": 525,
-      "Charges": 61.86,
-      "PnL": 463.14,
-      "ExitMode": "scalp",
-      "RR": 3,
-      "Confidence": 83,
-      "EntryBias": "Bullish",
-      "TrendAtEntry": "Up"
-    }
-  ],
+  "closedToday": [],
   "biasStreak": {
-    "bias": "Range",
-    "count": 1
+    "bias": "Bearish",
+    "count": 2
   },
-  "dayOpenSpot": 989,
+  "dayOpenSpot": 989.9,
   "dayExtremes": {
-    "low": 988.7,
-    "lowTs": 1790135825494,
-    "high": 996.3,
-    "highTs": 1790153034845
+    "low": 989.7,
+    "lowTs": 1790221734716,
+    "high": 989.9,
+    "highTs": 1790221552403
   }
 }
