@@ -1,39 +1,16 @@
 {
-  "date": "2026-09-28",
+  "date": "2026-09-29",
   "open": [],
-  "closedToday": [
-    {
-      "PosId": 1790583530559,
-      "Timestamp": "2026-09-28 13:48:50",
-      "ExitTime": "2026-09-28 13:59:20",
-      "Horizon": "intraday",
-      "Expiry": "2026-09-29",
-      "Strategy": "Buy Put",
-      "Legs": "BUY 960PE",
-      "Lots": 1,
-      "NetEntry": 4.05,
-      "NetExit": 5.4,
-      "Result": "WIN",
-      "ExitReason": "TARGET",
-      "GrossPnL": 1012.5,
-      "Charges": 52.88,
-      "PnL": 959.62,
-      "ExitMode": "scalp",
-      "RR": 3,
-      "Confidence": 100,
-      "EntryBias": "Bearish",
-      "TrendAtEntry": "Down"
-    }
-  ],
+  "closedToday": [],
   "biasStreak": {
     "bias": "Bearish",
-    "count": 118
+    "count": 2
   },
-  "dayOpenSpot": 978.2,
+  "dayOpenSpot": 961.4,
   "dayExtremes": {
-    "low": 956.6,
-    "lowTs": 1790586230341,
-    "high": 978.2,
-    "highTs": 1790567143953
+    "low": 959.4,
+    "lowTs": 1790653681480,
+    "high": 961.4,
+    "highTs": 1790653514029
   }
 }
